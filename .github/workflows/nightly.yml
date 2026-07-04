@@ -1,0 +1,57 @@
+# Nightly canary against the live API: the suite doubles as API monitoring.
+# Failures file (or update) a GitHub issue instead of failing silently.
+#
+# NOTE: deliberately no concurrency group — scheduled runs must never cancel
+# each other. GitHub pauses cron on repos inactive for 60 days; a manual
+# workflow_dispatch (or any commit) re-enables it.
+name: Nightly
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # 06:00 UTC daily
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  test:
+    name: Full suite vs live API
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run API tests
+        run: npm run test:ci
+      # Longer retention than PR runs: nightly reports are the failure-trend record.
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nightly-report-${{ github.run_number }}
+          path: playwright-report/
+          retention-days: 30
+      - name: File or update failure issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create nightly-failure --color D93F0B \
+            --description 'Scheduled run against the live API failed' --force || true
+          existing=$(gh issue list --label nightly-failure --state open --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Nightly run failed again: $RUN_URL"
+          else
+            gh issue create \
+              --title "Nightly API tests failed ($(date -u +%F))" \
+              --label nightly-failure \
+              --body "The scheduled run against the live API failed: $RUN_URL"
+          fi
