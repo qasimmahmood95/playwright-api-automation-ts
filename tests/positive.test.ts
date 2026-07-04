@@ -18,6 +18,7 @@ test.describe('Restful Booker - Positive API Tests', async () => {
 
   test('Health Check', async ({ request }) => {
     const ping = await request.get(`/ping`);
+    // restful-booker quirk: /ping returns 201 Created as its health signal (200 would be conventional)
     common.validateSuccessStatus(ping, 201);
   });
 
@@ -72,6 +73,7 @@ test.describe('Restful Booker - Positive API Tests', async () => {
     const deleteBooking = await request.delete('/booking/' + bookingId, {
       headers: { Cookie: 'token=' + token },
     });
+    // restful-booker quirk: DELETE returns 201 Created (correct would be 200/204) — documented API defect
     common.validateSuccessStatus(deleteBooking, 201);
 
     const getBooking = await request.get('/booking/' + bookingId);
