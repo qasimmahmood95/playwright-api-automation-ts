@@ -1,13 +1,5 @@
 import { APIRequestContext, APIResponse, expect } from '@playwright/test';
-
-export interface AuthCredentials {
-  username: string;
-  password: string;
-}
-
-export interface TokenResponse {
-  token: string;
-}
+import { AuthCredentials, TokenResponseSchema } from '../schemas/auth.schema';
 
 /**
  * Thin typed wrapper over the /auth endpoint. Receives the test's own
@@ -22,12 +14,10 @@ export class AuthClient {
     return this.request.post('/auth', { data: credentials });
   }
 
-  /** Happy-path token acquisition: asserts success and returns the token string. */
+  /** Happy-path token acquisition: asserts success, validates the contract, returns the token. */
   async getToken(credentials: AuthCredentials): Promise<string> {
     const response = await this.createToken(credentials);
     expect(response.status(), 'POST /auth should succeed').toBe(200);
-    const body = (await response.json()) as Partial<TokenResponse>;
-    expect(body.token, 'auth response should contain a token').toBeTruthy();
-    return body.token as string;
+    return TokenResponseSchema.parse(await response.json()).token;
   }
 }

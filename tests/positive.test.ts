@@ -1,7 +1,5 @@
 import { expect, test } from '../src/fixtures';
-import userDetails from '../test-data/valid/user_details.json';
-import partialUpdate from '../test-data/valid/partial_update_body.json';
-import update from '../test-data/valid/update_body.json';
+import { buildBooking } from '../src/data/booking.factory';
 
 test.describe('Restful Booker - Positive API Tests', () => {
   test('Health Check', async ({ request }) => {
@@ -16,33 +14,37 @@ test.describe('Restful Booker - Positive API Tests', () => {
   });
 
   test('Create Booking', async ({ createTestBooking }) => {
-    const created = await createTestBooking();
-    expect(created.bookingid).toBeGreaterThan(0);
-    expect(created.booking).toEqual(userDetails);
+    const { bookingid, booking, requested } = await createTestBooking();
+    expect(bookingid).toBeGreaterThan(0);
+    // Full round-trip: the API must echo every field it was sent.
+    expect(booking).toEqual(requested);
   });
 
   test('Get Newly Created Booking', async ({ bookingClient, createTestBooking }) => {
-    const { bookingid } = await createTestBooking();
+    const { bookingid, requested } = await createTestBooking();
 
-    const booking = await bookingClient.getBooking(bookingid);
-    expect(booking).toEqual(userDetails);
+    const fetched = await bookingClient.getBooking(bookingid);
+    expect(fetched).toEqual(requested);
   });
 
   test('Update Booking', async ({ bookingClient, createTestBooking, authToken }) => {
     const { bookingid } = await createTestBooking();
+    const replacement = buildBooking();
 
-    const updated = await bookingClient.updateBooking(bookingid, update, authToken);
-    expect(updated).toEqual(update);
+    const updated = await bookingClient.updateBooking(bookingid, replacement, authToken);
+    expect(updated).toEqual(replacement);
   });
 
   test('Partially Update Booking', async ({ bookingClient, createTestBooking, authToken }) => {
-    const { bookingid } = await createTestBooking();
+    const { bookingid, requested } = await createTestBooking();
 
-    const updated = await bookingClient.partialUpdateBooking(bookingid, partialUpdate, authToken);
-    expect(updated.totalprice).toBe(partialUpdate.totalprice);
-    // A PATCH must leave every field it did not touch intact.
-    expect(updated.firstname).toBe(userDetails.firstname);
-    expect(updated.bookingdates).toEqual(userDetails.bookingdates);
+    const updated = await bookingClient.partialUpdateBooking(
+      bookingid,
+      { totalprice: requested.totalprice + 1 },
+      authToken
+    );
+    // A PATCH must change exactly the fields it touched and nothing else.
+    expect(updated).toEqual({ ...requested, totalprice: requested.totalprice + 1 });
   });
 
   test('Delete Booking', async ({ bookingClient, createTestBooking, authToken }) => {

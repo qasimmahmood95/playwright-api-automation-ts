@@ -1,27 +1,12 @@
 import { APIRequestContext, APIResponse, expect } from '@playwright/test';
-
-export interface BookingDates {
-  checkin: string;
-  checkout: string;
-}
-
-export interface Booking {
-  firstname: string;
-  lastname: string;
-  totalprice: number;
-  depositpaid: boolean;
-  bookingdates: BookingDates;
-  additionalneeds?: string;
-}
-
-export interface CreateBookingResponse {
-  bookingid: number;
-  booking: Booking;
-}
-
-export interface BookingId {
-  bookingid: number;
-}
+import {
+  Booking,
+  BookingId,
+  BookingIdsSchema,
+  BookingSchema,
+  CreateBookingResponse,
+  CreateBookingResponseSchema,
+} from '../schemas/booking.schema';
 
 export interface BookingFilters {
   firstname?: string;
@@ -35,9 +20,9 @@ export interface BookingFilters {
  * APIRequestContext (the `request` fixture), so calls inherit baseURL,
  * show up in traces, and are disposed automatically.
  *
- * Happy-path methods assert the expected status and return parsed, typed
- * bodies; the *Raw variants make no assertions so negative tests can probe
- * error semantics.
+ * Happy-path methods assert the expected status and validate the full
+ * response body against the zod contract schemas; the *Raw variants make no
+ * assertions so negative tests can probe error semantics.
  */
 export class BookingClient {
   constructor(private readonly request: APIRequestContext) {}
@@ -48,13 +33,13 @@ export class BookingClient {
     );
     const response = await this.request.get('/booking', { params });
     expect(response.status(), 'GET /booking should succeed').toBe(200);
-    return (await response.json()) as BookingId[];
+    return BookingIdsSchema.parse(await response.json());
   }
 
   async getBooking(id: number): Promise<Booking> {
     const response = await this.getBookingRaw(id);
     expect(response.status(), `GET /booking/${id} should succeed`).toBe(200);
-    return (await response.json()) as Booking;
+    return BookingSchema.parse(await response.json());
   }
 
   async getBookingRaw(id: number): Promise<APIResponse> {
@@ -64,7 +49,7 @@ export class BookingClient {
   async createBooking(booking: Booking): Promise<CreateBookingResponse> {
     const response = await this.createBookingRaw(booking);
     expect(response.status(), 'POST /booking should succeed').toBe(200);
-    return (await response.json()) as CreateBookingResponse;
+    return CreateBookingResponseSchema.parse(await response.json());
   }
 
   async createBookingRaw(payload: unknown): Promise<APIResponse> {
@@ -74,7 +59,7 @@ export class BookingClient {
   async updateBooking(id: number, booking: Booking, token: string): Promise<Booking> {
     const response = await this.updateBookingRaw(id, booking, token);
     expect(response.status(), `PUT /booking/${id} should succeed`).toBe(200);
-    return (await response.json()) as Booking;
+    return BookingSchema.parse(await response.json());
   }
 
   async updateBookingRaw(id: number, payload: unknown, token: string): Promise<APIResponse> {
@@ -94,7 +79,7 @@ export class BookingClient {
       headers: { Cookie: `token=${token}` },
     });
     expect(response.status(), `PATCH /booking/${id} should succeed`).toBe(200);
-    return (await response.json()) as Booking;
+    return BookingSchema.parse(await response.json());
   }
 
   /**
