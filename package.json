@@ -31,13 +31,15 @@
     "check": "npm run typecheck && npm run lint && npm run format:check"
   },
   "devDependencies": {
-    "@eslint/js": "^9.9.1",
-    "@playwright/test": "^1.46.1",
-    "@types/node": "^22.5.0",
-    "eslint": "^9.9.1",
-    "globals": "^15.9.0",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.6.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-playwright": "^2.10.4",
+    "globals": "^16.0.0",
     "prettier": "^3.9.4",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.3.0"
+    "typescript-eslint": "^8.62.1"
   }
 }
