@@ -6,12 +6,8 @@ import userDetailsMissingDate from '../test-data/invalid/user_details_missing_da
 import invalidTokenAuthCredentials from '../test-data/invalid/invalid_token_auth_credentials.json';
 import update from '../test-data/valid/update_body.json';
 
-test.describe('Restful Booker API Tests - Negative API Testing', async () => {
+test.describe('Restful Booker API Tests - Negative API Testing', () => {
   const common = new Common();
-
-  test.beforeEach(async ({}) => {
-    console.log(`Running ${test.info().title}`);
-  });
 
   test('Cannot Create Booking with Invalid Name', async ({ request }) => {
     const createBooking = await request.post(`/booking`, { data: userDetailsInvalidName });
@@ -31,11 +27,11 @@ test.describe('Restful Booker API Tests - Negative API Testing', async () => {
     expect(createBooking.status()).toBe(500);
   });
 
-  test('Cannot Create Token with Invalid Credentials', async ({}) => {
+  test('Cannot Create Token with Invalid Credentials', async () => {
     const createToken = await common.createToken(invalidTokenAuthCredentials);
     // restful-booker quirk: failed auth returns 200 + {reason: 'Bad credentials'} instead of 401
     common.validateSuccessStatus(createToken, 200);
-    const response = await createToken.json();
+    const response = (await createToken.json()) as { reason: string };
     expect(response.reason).toBe('Bad credentials');
   });
 
@@ -48,9 +44,9 @@ test.describe('Restful Booker API Tests - Negative API Testing', async () => {
   });
 
   test('Cannot Delete Booking with Invalid Token', async ({ request }) => {
-    const updateBooking = await request.delete('/booking/1', {
+    const deleteBooking = await request.delete('/booking/1', {
       headers: { Cookie: 'token=123abc' },
     });
-    expect(updateBooking.status()).toBe(403);
+    expect(deleteBooking.status()).toBe(403);
   });
 });
