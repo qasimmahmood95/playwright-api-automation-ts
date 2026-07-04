@@ -3,28 +3,27 @@ import { env } from './src/config/env';
 
 export default defineConfig({
   testDir: './tests',
-  /* Run tests in files in parallel */
   fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
+  // Guard against an accidentally committed test.only starving CI of coverage.
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: 2,
-  /* Parallel tests */
-  workers: 3,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  // Retries exist for the live target (a free Heroku dyno: cold starts, shared
+  // tenancy) and only on CI. Locally a failure should fail immediately —
+  // local retries mask flakiness during development.
+  retries: process.env.CI ? 2 : 0,
+  // Shared public API — be a polite tenant on CI. Locally, one worker per core.
+  workers: process.env.CI ? 2 : undefined,
+  reporter: process.env.CI
+    ? [['list'], ['github'], ['html', { open: 'never' }]]
+    : [['list'], ['html', { open: 'never' }]],
+  // Generous per-test budget: a Heroku cold start alone can take ~10s.
+  timeout: 30_000,
+  expect: { timeout: 10_000 },
   use: {
-    /* Env-overridable so the same suite can target another instance (e.g. BASE_URL=http://localhost:3001). */
+    // Env-overridable so the same suite can target another instance
+    // (e.g. BASE_URL=http://localhost:3001 for a locally hosted restful-booker).
     baseURL: env.baseURL,
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+    // The API defaults some responses to text/html without this.
+    extraHTTPHeaders: { Accept: 'application/json' },
     trace: 'on-first-retry',
   },
-
-  projects: [
-    {
-      name: 'api-tests',
-      use: {},
-    },
-  ],
 });

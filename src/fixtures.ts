@@ -1,6 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import { AuthClient } from './clients/auth.client';
-import { BookingClient } from './clients/booking.client';
+import { BookingClient, tokenAuth } from './clients/booking.client';
 import { Booking, CreateBookingResponse } from './schemas/booking.schema';
 import { TokenResponseSchema } from './schemas/auth.schema';
 import { buildBooking, fakerSeed } from './data/booking.factory';
@@ -80,7 +80,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       return { ...created, requested };
     });
     for (const id of createdIds) {
-      await bookingClient.deleteBooking(id, authToken).catch(() => {});
+      await bookingClient.deleteBooking(id, tokenAuth(authToken)).catch(() => {});
     }
   },
 });
