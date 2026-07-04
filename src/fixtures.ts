@@ -1,16 +1,24 @@
 import { test as base, expect } from '@playwright/test';
-import { AuthClient, TokenResponse } from './clients/auth.client';
-import { Booking, BookingClient, CreateBookingResponse } from './clients/booking.client';
+import { AuthClient } from './clients/auth.client';
+import { BookingClient } from './clients/booking.client';
+import { Booking, CreateBookingResponse } from './schemas/booking.schema';
+import { TokenResponseSchema } from './schemas/auth.schema';
+import { buildBooking, fakerSeed } from './data/booking.factory';
 import { env } from './config/env';
-import userDetails from '../test-data/valid/user_details.json';
 
-/** Creates a booking (tracked for teardown cleanup) and returns the API's response. */
-export type CreateTestBooking = (overrides?: Partial<Booking>) => Promise<CreateBookingResponse>;
+export interface TestBooking extends CreateBookingResponse {
+  /** The payload sent to the API — assert round-trips against this. */
+  requested: Booking;
+}
+
+/** Creates a booking (tracked for teardown cleanup) and returns it with its request payload. */
+export type CreateTestBooking = (overrides?: Partial<Booking>) => Promise<TestBooking>;
 
 interface TestFixtures {
   authClient: AuthClient;
   bookingClient: BookingClient;
   createTestBooking: CreateTestBooking;
+  annotateFakerSeed: void;
 }
 
 interface WorkerFixtures {
@@ -34,6 +42,17 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     await use(new BookingClient(request));
   },
 
+  // Auto fixture: every test records the faker seed it ran with, so any
+  // failure is reproducible with `FAKER_SEED=<seed> npm test`.
+  annotateFakerSeed: [
+    // eslint-disable-next-line no-empty-pattern
+    async ({}, use, testInfo) => {
+      testInfo.annotations.push({ type: 'faker-seed', description: String(fakerSeed) });
+      await use();
+    },
+    { auto: true },
+  ],
+
   // One /auth round-trip per worker instead of one per test; only tests that
   // declare `authToken` pay for it at all.
   authToken: [
@@ -43,10 +62,9 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         data: { username: env.username, password: env.password },
       });
       expect(response.status(), 'worker auth token request should succeed').toBe(200);
-      const body = (await response.json()) as Partial<TokenResponse>;
+      const body: unknown = await response.json();
       await context.dispose();
-      expect(body.token, 'auth response should contain a token').toBeTruthy();
-      await use(body.token as string);
+      await use(TokenResponseSchema.parse(body).token);
     },
     { scope: 'worker' },
   ],
@@ -56,9 +74,10 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   createTestBooking: async ({ bookingClient, authToken }, use) => {
     const createdIds: number[] = [];
     await use(async (overrides: Partial<Booking> = {}) => {
-      const created = await bookingClient.createBooking({ ...userDetails, ...overrides });
+      const requested = buildBooking(overrides);
+      const created = await bookingClient.createBooking(requested);
       createdIds.push(created.bookingid);
-      return created;
+      return { ...created, requested };
     });
     for (const id of createdIds) {
       await bookingClient.deleteBooking(id, authToken).catch(() => {});
