@@ -15,21 +15,25 @@ test.describe('Restful Booker API Tests - Negative API Testing', async () => {
 
   test('Cannot Create Booking with Invalid Name', async ({ request }) => {
     const createBooking = await request.post(`/booking`, { data: userDetailsInvalidName });
+    // restful-booker quirk: validation failures return 500 (correct would be 400) — documented API defect
     expect(createBooking.status()).toBe(500);
   });
 
   test('Cannot Create Booking with Invalid JSON', async ({ request }) => {
     const createBooking = await request.post(`/booking`, { data: userDetailsInvalidJson });
+    // restful-booker quirk: validation failures return 500 (correct would be 400) — documented API defect
     expect(createBooking.status()).toBe(500);
   });
 
   test('Cannot Create Booking with Missing Date', async ({ request }) => {
     const createBooking = await request.post(`/booking`, { data: userDetailsMissingDate });
+    // restful-booker quirk: validation failures return 500 (correct would be 400) — documented API defect
     expect(createBooking.status()).toBe(500);
   });
 
   test('Cannot Create Token with Invalid Credentials', async ({}) => {
     const createToken = await common.createToken(invalidTokenAuthCredentials);
+    // restful-booker quirk: failed auth returns 200 + {reason: 'Bad credentials'} instead of 401
     common.validateSuccessStatus(createToken, 200);
     const response = await createToken.json();
     expect(response.reason).toBe('Bad credentials');
