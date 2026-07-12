@@ -32,7 +32,7 @@ jobs:
         run: npm run test:ci
       # Longer retention than PR runs: nightly reports are the failure-trend record.
       - name: Upload report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: nightly-report-${{ github.run_number }}
