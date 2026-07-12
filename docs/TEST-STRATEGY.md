@@ -29,14 +29,15 @@ restful-booker is intentionally defective; the suite asserts the _actual_
 behavior and annotates the deviation (`api-quirk` annotations render in the
 HTML report):
 
-| #   | Behavior                                        | Actual                                    | Conventional | Status                                        |
-| --- | ----------------------------------------------- | ----------------------------------------- | ------------ | --------------------------------------------- |
-| 1   | `GET /ping` health signal                       | `201 Created`                             | `200 OK`     | asserted + annotated                          |
-| 2   | `DELETE /booking/{id}` success                  | `201 Created`                             | `200`/`204`  | asserted + annotated                          |
-| 3   | Create-booking validation failure               | `500`                                     | `400`        | asserted + annotated (3 payload variants)     |
-| 4   | Failed auth `POST /auth`                        | `200` + `{reason: "Bad credentials"}`     | `401`        | asserted + annotated                          |
-| 5   | PUT/PATCH/DELETE on nonexistent id (valid auth) | `405`                                     | `404`        | asserted + annotated                          |
-| 6   | `checkin` date filter                           | reported off-by-one (`>` instead of `>=`) | `>=`         | **quarantined** pending live-API verification |
+| #   | Behavior                                        | Actual                                    | Conventional      | Status                                                         |
+| --- | ----------------------------------------------- | ----------------------------------------- | ----------------- | -------------------------------------------------------------- |
+| 1   | `GET /ping` health signal                       | `201 Created`                             | `200 OK`          | asserted + annotated                                           |
+| 2   | `DELETE /booking/{id}` success                  | `201 Created`                             | `200`/`204`       | asserted + annotated                                           |
+| 3   | Create-booking validation failure               | `500`                                     | `400`             | asserted + annotated (3 payload variants)                      |
+| 4   | Failed auth `POST /auth`                        | `200` + `{reason: "Bad credentials"}`     | `401`             | asserted + annotated                                           |
+| 5   | PUT/PATCH/DELETE on nonexistent id (valid auth) | `405`                                     | `404`             | asserted + annotated                                           |
+| 6   | `checkin` date filter                           | reported off-by-one (`>` instead of `>=`) | `>=`              | **quarantined** pending live-API verification                  |
+| 7   | XML responses (`Accept: application/xml`)       | `Content-Type: text/html`                 | `application/xml` | asserted + annotated — found by this suite's first live CI run |
 
 ## Flakiness strategy
 
@@ -100,8 +101,10 @@ Knowing what _not_ to build is part of the strategy:
 ## Verification status
 
 Assertions in this suite were developed against a local mock implementing the
-API's documented semantics (the authoring environment could not reach the
-live API). The standing acceptance gate before any merge to main: the full
-suite runs green **against the live API** in CI, and any behavior asserted
-for the first time (the 405 semantics, XML content types, filter behavior) is
-confirmed there. The checkin-filter test stays quarantined until verified.
+API's documented semantics, then confirmed against the **live API** by the
+first CI run (PR #1): the 405 semantics, name filters, both auth channels,
+and every quirky status held; the one live correction was defect #7 — XML
+responses arrive mislabeled as `text/html`, which the suite now asserts and
+documents. The standing gate remains: behavior asserted for the first time
+must be confirmed against the live API in CI before merge. The checkin-filter
+test stays quarantined until verified.
