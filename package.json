@@ -1,18 +1,51 @@
 {
   "name": "playwright-api-automation-ts",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {},
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "version": "0.1.0",
+  "description": "API test automation framework for restful-booker built with Playwright and TypeScript",
+  "private": true,
+  "author": "Qasim Mahmood",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qasimmahmood95/playwright-api-automation-ts.git"
+  },
+  "keywords": [
+    "playwright",
+    "typescript",
+    "api-testing",
+    "test-automation",
+    "sdet"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:ci": "playwright test --grep-invert @quarantine",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:regression": "playwright test --grep @regression --grep-invert @quarantine",
+    "test:negative": "playwright test --grep @negative",
+    "report": "playwright show-report",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run lint && npm run format:check"
+  },
   "devDependencies": {
-    "@eslint/js": "^9.9.1",
-    "@playwright/test": "^1.46.1",
-    "@types/node": "^22.5.0",
-    "eslint": "^9.9.1",
-    "globals": "^15.9.0",
-    "typescript-eslint": "^8.3.0"
+    "@eslint/js": "^10.0.1",
+    "@faker-js/faker": "^10.5.0",
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^24.0.0",
+    "dotenv": "^17.4.2",
+    "eslint": "^10.6.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-playwright": "^2.10.4",
+    "globals": "^16.0.0",
+    "prettier": "^3.9.4",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.1",
+    "zod": "^4.4.3"
   }
 }
